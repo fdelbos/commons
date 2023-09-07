@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/url"
-
-	"github.com/rs/zerolog/log"
 )
 
 type (
@@ -37,9 +35,16 @@ func IsErrNoRows(err error) bool {
 func ReplaceDBInURL(originalURL, newDb string) (string, error) {
 	url, err := url.Parse(originalURL)
 	if err != nil {
-		log.Err(err).Msg("Unable to parse database url")
 		return "", err
 	}
 	url.Path = newDb
 	return url.String(), nil
+}
+
+func DBName(originalURL string) (string, error) {
+	url, err := url.Parse(originalURL)
+	if err != nil {
+		return "", err
+	}
+	return url.Path[1:], nil
 }

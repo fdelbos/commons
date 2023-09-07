@@ -50,7 +50,7 @@ func Json(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNoContent)
 
 	default:
-		return respondError(c, fiber.StatusMethodNotAllowed, "method not allowed")
+		return ErrMethodNotAllowed(c)
 
 	}
 }

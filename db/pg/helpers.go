@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/dchest/uniuri"
 	"github.com/fdelbos/commons/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -57,6 +58,56 @@ func CreateNewDB(ctx context.Context, posrgresURL, dbName string) error {
 	}
 
 	return nil
+}
+
+func DropDB(ctx context.Context, dbURL string) error {
+	posrgresURL, err := db.ReplaceDBInURL(dbURL, "postgres")
+	if err != nil {
+		return err
+	}
+
+	dbName, err := db.DBName(dbURL)
+	if err != nil {
+		return err
+	}
+
+	pgConn, err := pgx.Connect(context.Background(), posrgresURL)
+	if err != nil {
+		log.Err(err).Msg("Unable to connect to postgres database")
+		return err
+	}
+
+	defer pgConn.Close(ctx)
+
+	// drop the database
+	if _, err := pgConn.Exec(ctx, fmt.Sprintf("drop database if exists %s;", dbName)); err != nil {
+		log.Err(err).Msg("Unable to drop the database")
+		return err
+	}
+	return nil
+}
+
+func GenerateDB(ctx context.Context, dbURL, prefix string, migrate func(string) error) (string, error) {
+	postgresURL, err := db.ReplaceDBInURL(dbURL, "postgres")
+	if err != nil {
+		return "", err
+	}
+
+	cloneName := fmt.Sprintf(
+		"%s_%s",
+		prefix,
+		uniuri.NewLenChars(6, []byte("abcdefghijklmnopqrstuvwxyz")))
+
+	CreateNewDB(ctx, postgresURL, cloneName)
+	cloneURL, err := db.ReplaceDBInURL(dbURL, cloneName)
+	if err != nil {
+		return "", err
+	}
+
+	if err := migrate(cloneURL); err != nil {
+		return "", err
+	}
+	return cloneURL, nil
 }
 
 func newPool(ctx context.Context, url string) (*pgxpool.Pool, error) {

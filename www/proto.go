@@ -91,3 +91,9 @@ func ErrUnauthorized(c *fiber.Ctx) error {
 		fiber.StatusUnauthorized,
 		utils.StatusMessage(fiber.StatusUnauthorized))
 }
+
+func ErrMethodNotAllowed(c *fiber.Ctx) error {
+	return respondError(c,
+		fiber.StatusMethodNotAllowed,
+		utils.StatusMessage(fiber.StatusMethodNotAllowed))
+}
