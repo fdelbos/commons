@@ -7,6 +7,8 @@ import (
 )
 
 type (
+	AdvisoryLockID int
+
 	Migrator func(string) error
 
 	Query interface {
@@ -21,11 +23,13 @@ type (
 	DB interface {
 		Query(ctx context.Context) Query
 		Tx(ctx context.Context, fn func(ctx context.Context) error) error
+		Lock(ctx context.Context, lockID AdvisoryLockID, fn func(ctx context.Context) error) error
 	}
 )
 
 var (
-	ErrNoRows = errors.New("no rows in result set")
+	ErrNoRows     = errors.New("no rows in result set")
+	ErrLockFailed = errors.New("lock failed")
 )
 
 func IsErrNoRows(err error) bool {

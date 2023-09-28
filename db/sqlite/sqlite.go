@@ -25,14 +25,13 @@ type (
 func NewConn(path string) (*SqlConn, error) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	conn := &SqlConn{db: db}
-	return conn, nil
-}
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
 
-func (conn *SqlConn) DB() *sql.DB {
-	return conn.db
+	return &SqlConn{db: db}, nil
 }
 
 func (conn *SqlConn) Query(ctx context.Context) db.Query {
@@ -40,11 +39,19 @@ func (conn *SqlConn) Query(ctx context.Context) db.Query {
 }
 
 func (conn *SqlConn) Close() error {
-	return conn.db.Close()
+	if conn.db != nil {
+		return conn.db.Close()
+	}
+	return nil
 }
 
 func (conn *SqlConn) Tx(ctx context.Context, fn func(ctx context.Context) error) error {
 	return tx(ctx, conn.db, fn)
+}
+
+func (conn *SqlConn) Lock(ctx context.Context, lockID db.AdvisoryLockID, fn func(ctx context.Context) error) error {
+	log.Fatal("sqlite does not support advisory locks!")
+	return nil // never called
 }
 
 func (q *query) Exec(query string, arguments ...interface{}) error {

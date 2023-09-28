@@ -25,7 +25,3 @@ func queryFromCtx(ctx context.Context, defaultConn *sql.DB) db.Query {
 	}
 	panic("database context is not a Query object")
 }
-
-// func CreateNewDB(ctx context.Context, path string) error {
-
-// }

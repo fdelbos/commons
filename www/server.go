@@ -6,6 +6,7 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/rs/zerolog/log"
 )
@@ -38,6 +39,9 @@ func Serve(route Route, config ServerConfig) error {
 		BodyLimit:             config.BodyLimit,
 	})
 	app.Use(logger.New())
+
+	// TODO: remove this
+	app.Use(cors.New())
 
 	group := app.Group(config.BaseURL)
 

@@ -34,6 +34,10 @@ type (
 	}
 )
 
+var (
+	ErrNoConnectionInContext = errors.New("no connection found in context")
+)
+
 // NewConn creates a new connection to a postgres database.
 // It must be closed when done.
 func NewConn(url string) (*PgConn, error) {
@@ -60,6 +64,14 @@ func (pg *pgPool) Tx(ctx context.Context, fn func(ctx context.Context) error) er
 	return tx(ctx, pg.pool, fn)
 }
 
+func (pg *pgPool) Lock(ctx context.Context, lockID db.AdvisoryLockID, fn func(ctx context.Context) error) error {
+	return lock(ctx, pg.pool, lockID, fn)
+}
+
+func (pg *PgConn) Lock(ctx context.Context, lockID db.AdvisoryLockID, fn func(ctx context.Context) error) error {
+	return lock(ctx, pg.conn, lockID, fn)
+}
+
 func (pg *PgConn) Query(ctx context.Context) db.Query {
 	return queryFromCtx(ctx, pg.conn)
 }
@@ -73,6 +85,9 @@ func (pg *PgConn) Close(ctx context.Context) error {
 }
 
 func (q *query) Exec(sql string, arguments ...interface{}) error {
+	if q.conn == nil {
+		return ErrNoConnectionInContext
+	}
 	_, err := q.conn.Exec(q.ctx, sql, arguments...)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return db.ErrNoRows
@@ -81,6 +96,9 @@ func (q *query) Exec(sql string, arguments ...interface{}) error {
 }
 
 func (q *query) Select(dest interface{}, sql string, args ...interface{}) error {
+	if q.conn == nil {
+		return ErrNoConnectionInContext
+	}
 	err := pgxscan.Select(q.ctx, q.conn, dest, sql, args...)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return db.ErrNoRows
@@ -89,6 +107,9 @@ func (q *query) Select(dest interface{}, sql string, args ...interface{}) error 
 }
 
 func (q *query) Get(dest interface{}, sql string, args ...interface{}) error {
+	if q.conn == nil {
+		return ErrNoConnectionInContext
+	}
 	err := pgxscan.Get(q.ctx, q.conn, dest, sql, args...)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return db.ErrNoRows

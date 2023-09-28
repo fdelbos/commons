@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/fdelbos/commons/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog/log"
 )
@@ -44,4 +45,20 @@ func tx(ctx context.Context, conn txBeginner, fn func(ctx context.Context) error
 	} else {
 		return tx.Commit(ctx)
 	}
+}
+
+func lock(ctx context.Context, conn txBeginner, lockID db.AdvisoryLockID, fn func(ctx context.Context) error) error {
+	return tx(ctx, conn, func(ctx context.Context) error {
+		dest := struct {
+			Locked bool `db:"locked"`
+		}{}
+		err := queryFromCtx(ctx, nil).Get(&dest, "SELECT pg_try_advisory_xact_lock($1) as locked", lockID)
+		if err != nil {
+			return err
+		}
+		if !dest.Locked {
+			return db.ErrLockFailed
+		}
+		return fn(ctx)
+	})
 }
