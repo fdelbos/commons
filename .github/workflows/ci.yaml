@@ -33,4 +33,4 @@ jobs:
           go mod download
 
       - name: Test
-        run: go test -count=1 -cover -race -timeout 60s ./...
+        run: make test
