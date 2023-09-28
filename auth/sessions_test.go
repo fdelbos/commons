@@ -32,7 +32,7 @@ func TestSessions(t *testing.T) {
 		}).
 		Once()
 
-	session, err := sessions.NewAPISession(userID, &until)
+	session, err := sessions.NewAPISession(userID, until)
 	assert.NoError(t, err)
 	assert.Equal(t, mockSessionID, session.SessionID)
 

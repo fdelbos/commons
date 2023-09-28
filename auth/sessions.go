@@ -25,7 +25,7 @@ type (
 	Session struct {
 		SessionID string
 		UserID    uuid.UUID
-		Until     *time.Time
+		Until     time.Time
 		Type      SessionType
 	}
 )
@@ -50,7 +50,7 @@ func (s *Sessions) genSessionID() string {
 	return uniuri.NewLen(SessionIDLen)
 }
 
-func (s *Sessions) NewHTMLSession(userID uuid.UUID, until *time.Time) (*Session, error) {
+func (s *Sessions) NewHTMLSession(userID uuid.UUID, until time.Time) (*Session, error) {
 	session := &Session{
 		SessionID: s.genSessionID(),
 		UserID:    userID,
@@ -63,7 +63,7 @@ func (s *Sessions) NewHTMLSession(userID uuid.UUID, until *time.Time) (*Session,
 	return session, nil
 }
 
-func (s *Sessions) NewAPISession(userID uuid.UUID, until *time.Time) (*Session, error) {
+func (s *Sessions) NewAPISession(userID uuid.UUID, until time.Time) (*Session, error) {
 	session := &Session{
 		SessionID: s.genSessionID(),
 		UserID:    userID,
@@ -82,11 +82,10 @@ func (s *Sessions) Get(sessionID string) (*Session, error) {
 	if err != nil {
 		return nil, ErrInvalidSession
 	}
-	if session.Until != nil {
-		if session.Until.Before(time.Now()) {
-			defer s.store.Close(sessionID)
-			return nil, ErrInvalidSession
-		}
+
+	if session.Until.Before(time.Now()) {
+		defer s.store.Close(sessionID)
+		return nil, ErrInvalidSession
 	}
 
 	return session, nil
