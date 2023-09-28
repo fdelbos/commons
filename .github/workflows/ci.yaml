@@ -1,0 +1,36 @@
+name: Continuous Integration
+on: [push]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      pg:
+        image: postgres:15-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: gateway
+          POSTGRES_USER: gateway
+          POSTGRES_DB: gateway
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: ./go.mod
+
+      - name: Install dependencies
+        run: |
+          go mod download
+
+      - name: Test
+        run: go test -count=1 -cover -race -timeout 60s ./...
