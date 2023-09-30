@@ -68,6 +68,10 @@ func BadRequest(c *fiber.Ctx, body interface{}) error {
 	return respondKo(c, fiber.StatusBadRequest, body)
 }
 
+func Conflict(c *fiber.Ctx, body interface{}) error {
+	return respondKo(c, fiber.StatusConflict, body)
+}
+
 func ErrNotFound(c *fiber.Ctx) error {
 	return respondError(c,
 		fiber.StatusNotFound,
