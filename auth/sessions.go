@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -14,9 +15,9 @@ type (
 		Until  *time.Time
 	}
 	SessionsStore interface {
-		New(session Session) error
-		Get(digest []byte) (*Session, error)
-		Close(digest []byte) error
+		New(ctx context.Context, session Session) error
+		Get(ctx context.Context, digest []byte) (*Session, error)
+		Close(ctx context.Context, digest []byte) error
 	}
 
 	Sessions struct {
@@ -37,7 +38,7 @@ func NewSessions(store SessionsStore) *Sessions {
 	return s
 }
 
-func (s *Sessions) NewSession(userID uuid.UUID, duration time.Duration) (string, error) {
+func (s *Sessions) NewSession(ctx context.Context, userID uuid.UUID, duration time.Duration) (string, error) {
 	key, err := NewApiKey()
 	if err != nil {
 		return "", err
@@ -56,27 +57,28 @@ func (s *Sessions) NewSession(userID uuid.UUID, duration time.Duration) (string,
 		until := time.Now().Add(duration)
 		session.Until = &until
 	}
-	if err := s.store.New(*session); err != nil {
+
+	if err := s.store.New(ctx, *session); err != nil {
 		return "", err
 	}
 
 	return key, nil
 }
 
-func (s *Sessions) Get(sessionID string) (*Session, error) {
+func (s *Sessions) Get(ctx context.Context, sessionID string) (*Session, error) {
 	digest, err := DigestFromAPIKey(sessionID)
 	if err != nil {
 		return nil, ErrInvalidSession
 	}
 
-	session, err := s.store.Get(digest)
+	session, err := s.store.Get(ctx, digest)
 	if err != nil {
 		return nil, ErrInvalidSession
 	}
 
 	if session.Until != nil {
 		if session.Until.Before(time.Now()) {
-			defer s.store.Close(digest)
+			defer s.store.Close(ctx, digest)
 			return nil, ErrInvalidSession
 		}
 	}
@@ -84,10 +86,10 @@ func (s *Sessions) Get(sessionID string) (*Session, error) {
 	return session, nil
 }
 
-func (s *Sessions) Close(sessionID string) error {
+func (s *Sessions) Close(ctx context.Context, sessionID string) error {
 	digest, err := DigestFromAPIKey(sessionID)
 	if err != nil {
 		return ErrInvalidSession
 	}
-	return s.store.Close(digest)
+	return s.store.Close(ctx, digest)
 }

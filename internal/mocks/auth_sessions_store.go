@@ -3,7 +3,10 @@
 package mocks
 
 import (
+	context "context"
+
 	auth "github.com/fdelbos/commons/auth"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -12,13 +15,13 @@ type AuthSessionsStore struct {
 	mock.Mock
 }
 
-// Close provides a mock function with given fields: digest
-func (_m *AuthSessionsStore) Close(digest []byte) error {
-	ret := _m.Called(digest)
+// Close provides a mock function with given fields: ctx, digest
+func (_m *AuthSessionsStore) Close(ctx context.Context, digest []byte) error {
+	ret := _m.Called(ctx, digest)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func([]byte) error); ok {
-		r0 = rf(digest)
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) error); ok {
+		r0 = rf(ctx, digest)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -26,25 +29,25 @@ func (_m *AuthSessionsStore) Close(digest []byte) error {
 	return r0
 }
 
-// Get provides a mock function with given fields: digest
-func (_m *AuthSessionsStore) Get(digest []byte) (*auth.Session, error) {
-	ret := _m.Called(digest)
+// Get provides a mock function with given fields: ctx, digest
+func (_m *AuthSessionsStore) Get(ctx context.Context, digest []byte) (*auth.Session, error) {
+	ret := _m.Called(ctx, digest)
 
 	var r0 *auth.Session
 	var r1 error
-	if rf, ok := ret.Get(0).(func([]byte) (*auth.Session, error)); ok {
-		return rf(digest)
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) (*auth.Session, error)); ok {
+		return rf(ctx, digest)
 	}
-	if rf, ok := ret.Get(0).(func([]byte) *auth.Session); ok {
-		r0 = rf(digest)
+	if rf, ok := ret.Get(0).(func(context.Context, []byte) *auth.Session); ok {
+		r0 = rf(ctx, digest)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*auth.Session)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]byte) error); ok {
-		r1 = rf(digest)
+	if rf, ok := ret.Get(1).(func(context.Context, []byte) error); ok {
+		r1 = rf(ctx, digest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -52,13 +55,13 @@ func (_m *AuthSessionsStore) Get(digest []byte) (*auth.Session, error) {
 	return r0, r1
 }
 
-// New provides a mock function with given fields: session
-func (_m *AuthSessionsStore) New(session auth.Session) error {
-	ret := _m.Called(session)
+// New provides a mock function with given fields: ctx, session
+func (_m *AuthSessionsStore) New(ctx context.Context, session auth.Session) error {
+	ret := _m.Called(ctx, session)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(auth.Session) error); ok {
-		r0 = rf(session)
+	if rf, ok := ret.Get(0).(func(context.Context, auth.Session) error); ok {
+		r0 = rf(ctx, session)
 	} else {
 		r0 = ret.Error(0)
 	}

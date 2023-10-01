@@ -35,7 +35,7 @@ func FilterSession(sessions *auth.Sessions) func(c *fiber.Ctx) error {
 		if sessionID == "" {
 			return ErrUnauthorized(c)
 		}
-		session, err := sessions.Get(sessionID)
+		session, err := sessions.Get(c.Context(), sessionID)
 		if err != nil {
 			return ErrUnauthorized(c)
 		}
