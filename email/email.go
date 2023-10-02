@@ -3,12 +3,13 @@ package email
 import (
 	"context"
 	"io"
+	"log"
 
 	"github.com/wneessen/go-mail"
 )
 
 type (
-	Email struct {
+	SMTPEmail struct {
 		client *mail.Client
 
 		// SMTP
@@ -17,10 +18,12 @@ type (
 		smtpFrom    string
 		optionalTLS bool
 	}
+
+	ConsoleEmail struct{}
 )
 
-func NewSMTP(host string, port int, opts ...func(e *Email)) (*Email, error) {
-	email := &Email{}
+func NewSMTP(host string, port int, opts ...func(e *SMTPEmail)) (*SMTPEmail, error) {
+	email := &SMTPEmail{}
 	for _, opt := range opts {
 		opt(email)
 	}
@@ -45,7 +48,7 @@ func NewSMTP(host string, port int, opts ...func(e *Email)) (*Email, error) {
 	return email, nil
 }
 
-func (e *Email) Send(ctx context.Context, to, subject string, textReader, htmlReader io.Reader) error {
+func (e *SMTPEmail) Send(ctx context.Context, to, subject string, textReader, htmlReader io.Reader) error {
 	msg := mail.NewMsg()
 
 	msg.From(e.smtpFrom)
@@ -63,21 +66,30 @@ func (e *Email) Send(ctx context.Context, to, subject string, textReader, htmlRe
 	return e.client.DialAndSendWithContext(ctx, msg)
 }
 
-func WithPlainAuth(user, pass string) func(e *Email) {
-	return func(e *Email) {
+func WithPlainAuth(user, pass string) func(e *SMTPEmail) {
+	return func(e *SMTPEmail) {
 		e.smtpUser = user
 		e.smtpPass = pass
 	}
 }
 
-func WithFrom(from string) func(e *Email) {
-	return func(e *Email) {
+func WithFrom(from string) func(e *SMTPEmail) {
+	return func(e *SMTPEmail) {
 		e.smtpFrom = from
 	}
 }
 
-func WithOptionalTLS(optional bool) func(e *Email) {
-	return func(e *Email) {
+func WithOptionalTLS(optional bool) func(e *SMTPEmail) {
+	return func(e *SMTPEmail) {
 		e.optionalTLS = optional
 	}
+}
+
+func (c ConsoleEmail) Send(ctx context.Context, to, subject string, textReader, htmlReader io.Reader) error {
+	if raw, err := io.ReadAll(textReader); err == nil {
+		log.Printf(`Sending email to "%s" with subject "%s" and body:\n%s`, to, subject, string(raw))
+	} else {
+		log.Printf(`Sending email to "%s" with subject "%s"`, to, subject)
+	}
+	return nil
 }

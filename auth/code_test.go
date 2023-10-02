@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"context"
+	"io"
 	"testing"
 	"time"
 
@@ -15,37 +16,51 @@ func TestCode(t *testing.T) {
 	mailer := mocks.NewAuthMailer(t)
 	codeStore := mocks.NewAuthCodeStore(t)
 
-	code, err := NewCode(mailer, codeStore)
+	codes, err := NewCodes(mailer, codeStore, WithCodeTemplates(DefaultDigitsEmailSubject, "{{.Code}}", ""))
 	assert.NoError(t, err)
 
 	ctx := context.Background()
 
+	digitsFromMock := ""
 	// test send code
-	mailer.
-		On("Send", ctx, "test@example.com", DefaultDigitsEmailSubject, mock.Anything, mock.Anything).
-		Return(nil).
-		Once()
 
 	codeStore.
-		On("NewCode", ctx, "test@example.com", mock.Anything, mock.Anything).
-		Return(nil).
+		On("NewCode", ctx, mock.Anything).
+		Return(func(ctx context.Context, code *Code) error {
+			assert.True(t, code.Until.After(time.Now()))
+			return nil
+		}).
 		Once()
 
-	err = code.Send(ctx, "test@example.com")
+	mailer.
+		On("Send", ctx, "test@example.com", DefaultDigitsEmailSubject, mock.Anything, mock.Anything).
+		Return(func(ctx context.Context, to, subject string, text, html io.Reader) error {
+			assert.Equal(t, "test@example.com", to)
+			assert.Equal(t, DefaultDigitsEmailSubject, subject)
+			raw, err := io.ReadAll(text)
+			assert.NoError(t, err)
+			digitsFromMock = string(raw)
+			return nil
+		}).
+		Once()
+
+	err = codes.Send(ctx, "test@example.com")
 	assert.NoError(t, err)
 
 	// test validate code
+	digest := GenDigest("test@example.com", digitsFromMock)
+	until := time.Now().Add(time.Hour)
 	codeStore.
-		On("GetCode", ctx, "ABCDEFGH").
-		Return("test@example.com", time.Now().Add(time.Minute), nil).
+		On("GetCode", ctx, digest).
+		Return(&Code{Digest: digest, Until: until}, nil).
 		Once()
 
 	codeStore.
-		On("Use", ctx, "ABCDEFGH").
+		On("Use", ctx, digest).
 		Return(nil).
 		Once()
 
-	err = code.Validate(ctx, "aBcDEFgh", "test@example.com")
+	err = codes.Validate(ctx, digitsFromMock, "test@example.com")
 	assert.NoError(t, err)
 
 	mailer.AssertExpectations(t)

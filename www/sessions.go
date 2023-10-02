@@ -48,6 +48,7 @@ func FilterSession(sessions *auth.Sessions) func(c *fiber.Ctx) error {
 		}
 
 		if sessionID == "" {
+
 			return ErrUnauthorized(c)
 		}
 

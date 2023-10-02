@@ -1,6 +1,9 @@
 package www
 
 import (
+	"encoding/json"
+	"io"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
 )
@@ -27,6 +30,15 @@ const (
 	Fail    Status = "fail"
 	Error   Status = "error"
 )
+
+func ParseData[T any](r io.Reader) (*T, error) {
+	res := struct {
+		Data *T `json:"data,omitempty"`
+	}{}
+
+	err := json.NewDecoder(r).Decode(&res)
+	return res.Data, err
+}
 
 func Obj(key string, data interface{}) Entries {
 	return Entries{Name: key, Data: data}

@@ -24,3 +24,5 @@ mocks:
 	$(call mock,auth,CodeStore,AuthCodeStore, auth_code_store.go)
 	$(call mock,auth,Mailer,AuthMailer, auth_mailer.go)
 	$(call mock,auth,SessionsStore,AuthSessionsStore, auth_sessions_store.go)
+	$(call mock,www,CodesService,WWWCodesService, www_codes_service.go)
+	$(call mock,www,SessionsService,WWWSessionsService, www_sessions_service.go)
