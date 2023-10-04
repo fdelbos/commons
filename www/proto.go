@@ -113,3 +113,11 @@ func ErrMethodNotAllowed(c *fiber.Ctx) error {
 		fiber.StatusMethodNotAllowed,
 		utils.StatusMessage(fiber.StatusMethodNotAllowed))
 }
+
+func ErrConflict(c *fiber.Ctx, msg ...string) error {
+	errMsg := utils.StatusMessage(fiber.StatusTooManyRequests)
+	if len(msg) > 0 {
+		errMsg = msg[0]
+	}
+	return respondError(c, fiber.StatusTooManyRequests, errMsg)
+}
