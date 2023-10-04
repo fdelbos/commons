@@ -68,14 +68,17 @@ func respondKo(c *fiber.Ctx, statusCode int, body interface{}) error {
 	return respondData(c, Fail, statusCode, body)
 }
 
+// returns a 200 OK response with the given body
 func Ok(c *fiber.Ctx, body interface{}) error {
 	return respondOk(c, fiber.StatusOK, body)
 }
 
+// returns a 201 Created response with the given body
 func Created(c *fiber.Ctx, body interface{}) error {
 	return respondOk(c, fiber.StatusCreated, body)
 }
 
+// returns a 400 BadRequest response with the given body
 func BadRequest(c *fiber.Ctx, body interface{}) error {
 	return respondKo(c, fiber.StatusBadRequest, body)
 }
