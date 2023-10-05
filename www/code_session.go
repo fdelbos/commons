@@ -71,7 +71,7 @@ func (css *CodeSession) Routes(r fiber.Router) {
 func (css *CodeSession) Send(c *fiber.Ctx, req *CodeSessionRequest) error {
 	err := css.codes.Send(c.Context(), req.Email)
 	if err != nil {
-		return ErrInternal(c)
+		return ErrInternal(c, err)
 	}
 
 	return Ok(c, nil)
@@ -91,7 +91,7 @@ func (css *CodeSession) Answer(c *fiber.Ctx, req *CodeSessionAnswer) error {
 	// lets create a new session
 	sessionID, err := css.sessions.NewSession(c.Context(), userID, css.duration)
 	if err != nil {
-		return ErrInternal(c)
+		return ErrInternal(c, err)
 	}
 	return Created(c, &CodeSessionResponse{
 		SessionID: sessionID,

@@ -3,6 +3,7 @@ package www
 import (
 	"encoding/json"
 	"io"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
@@ -93,7 +94,8 @@ func ErrNotFound(c *fiber.Ctx) error {
 		utils.StatusMessage(fiber.StatusNotFound))
 }
 
-func ErrInternal(c *fiber.Ctx) error {
+func ErrInternal(c *fiber.Ctx, err error) error {
+	log.Printf("internal error: %v", err)
 	return respondError(c,
 		fiber.StatusInternalServerError,
 		utils.StatusMessage(fiber.StatusInternalServerError))

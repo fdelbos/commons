@@ -28,7 +28,7 @@ func handleResponse(c *fiber.Ctx) error {
 	}
 
 	log.Err(err).Str("obj", spew.Sdump(err)).Msg("un handled error while processing request")
-	return ErrInternal(c)
+	return ErrInternal(c, err)
 }
 
 func Json(c *fiber.Ctx) error {
