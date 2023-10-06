@@ -11,14 +11,16 @@ func Refresh[T any](ctx context.Context, interval time.Duration, fn func(ctx con
 	var (
 		ticker = time.NewTicker(interval)
 		mut    sync.RWMutex
-		obj    *T
+		obj    T
 	)
 
 	update := func() {
 		mut.Lock()
 		defer mut.Unlock()
-
-		obj = fn(ctx)
+		res := fn(ctx)
+		if res != nil {
+			obj = *res
+		}
 	}
 
 	go func() {
@@ -38,6 +40,6 @@ func Refresh[T any](ctx context.Context, interval time.Duration, fn func(ctx con
 		mut.RLock()
 		defer mut.RUnlock()
 
-		return obj
+		return &obj
 	}
 }

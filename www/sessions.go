@@ -24,7 +24,7 @@ const (
 // - Authorization header: Bearer <session>
 // - Cookie: session_auth=<session>
 // - Query param: session=<session>
-func FilterSession(sessions *auth.Sessions) func(c *fiber.Ctx) error {
+func FilterSession(sessions *auth.Sessions) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		sessionID := ""
 

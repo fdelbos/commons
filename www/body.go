@@ -25,7 +25,7 @@ func validationErrors(c *fiber.Ctx, err error) error {
 // Parser is a middleware that parse the body of the request and validates it.
 // An invalid validation returns a 400 Bad Request with a JSON body containing the validation errors.
 // Here is an example response: {"status":"fail","data":{"validation":{"name":"name is a required field"}}}
-func Parser[T any](next func(*fiber.Ctx, *T) error) func(*fiber.Ctx) error {
+func Parser[T any](next func(*fiber.Ctx, *T) error) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 
 		body := new(T)
