@@ -87,9 +87,9 @@ func WithOptionalTLS(optional bool) func(e *SMTPEmail) {
 
 func (c ConsoleEmail) Send(ctx context.Context, to, subject string, textReader, htmlReader io.Reader) error {
 	if raw, err := io.ReadAll(textReader); err == nil {
-		log.Printf(`Sending email to "%s" with subject "%s" and body:\n%s`, to, subject, string(raw))
+		log.Printf(`Sending email to="%s" subject="%s" body="%s"`, to, subject, string(raw))
 	} else {
-		log.Printf(`Sending email to "%s" with subject "%s"`, to, subject)
+		log.Printf(`Sending email to="%s" subject="%s"`, to, subject)
 	}
 	return nil
 }
