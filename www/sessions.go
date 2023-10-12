@@ -48,7 +48,6 @@ func FilterSession(sessions *auth.Sessions) fiber.Handler {
 		}
 
 		if sessionID == "" {
-
 			return ErrUnauthorized(c)
 		}
 

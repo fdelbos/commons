@@ -28,7 +28,8 @@ type (
 		codes       CodesService
 		emailToUUID EmailToUUID
 		sessions    SessionsService
-		duration    time.Duration
+		codeTTL     time.Duration
+		sessionTTL  time.Duration
 	}
 
 	CodeSessionRequest struct {
@@ -46,7 +47,7 @@ type (
 )
 
 const (
-	DefaultCodeDuration = time.Minute * 5
+	DefaultCodeTTL = time.Minute * 30
 )
 
 func NewCodeSession(codes CodesService, emailToUUID EmailToUUID, sessions SessionsService, opts ...func(*CodeSession)) *CodeSession {
@@ -54,7 +55,8 @@ func NewCodeSession(codes CodesService, emailToUUID EmailToUUID, sessions Sessio
 		codes:       codes,
 		emailToUUID: emailToUUID,
 		sessions:    sessions,
-		duration:    DefaultCodeDuration,
+		codeTTL:     DefaultCodeTTL,
+		sessionTTL:  auth.Forever,
 	}
 
 	for _, opt := range opts {
@@ -89,7 +91,7 @@ func (css *CodeSession) Answer(c *fiber.Ctx, req *CodeSessionAnswer) error {
 	}
 
 	// lets create a new session
-	sessionID, err := css.sessions.NewSession(c.Context(), userID, css.duration)
+	sessionID, err := css.sessions.NewSession(c.Context(), userID, css.sessionTTL)
 	if err != nil {
 		return ErrInternal(c, err)
 	}
@@ -98,8 +100,14 @@ func (css *CodeSession) Answer(c *fiber.Ctx, req *CodeSessionAnswer) error {
 	})
 }
 
-func WithDuration(d time.Duration) func(*CodeSession) {
+func WithCodeTTL(d time.Duration) func(*CodeSession) {
 	return func(css *CodeSession) {
-		css.duration = d
+		css.codeTTL = d
+	}
+}
+
+func WithSessionTTL(d time.Duration) func(*CodeSession) {
+	return func(css *CodeSession) {
+		css.sessionTTL = d
 	}
 }

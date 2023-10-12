@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/fdelbos/commons/internal/mocks"
 	. "github.com/fdelbos/commons/www"
@@ -22,6 +23,7 @@ func TestCodeSession(t *testing.T) {
 	expectedEmail := "expected@test.com"
 	expectedUUID := uuid.New()
 	expectedCode := "123456"
+	sessionTTL := time.Hour * 24
 
 	emailToUUID := func(ctx context.Context, email string) (uuid.UUID, error) {
 		assert.Equal(t, expectedEmail, email)
@@ -30,7 +32,7 @@ func TestCodeSession(t *testing.T) {
 
 	sessionsService := mocks.NewWWWSessionsService(t)
 
-	NewCodeSession(codesService, emailToUUID, sessionsService).
+	NewCodeSession(codesService, emailToUUID, sessionsService, WithSessionTTL(sessionTTL)).
 		Routes(app)
 
 	t.Run("new codes", func(t *testing.T) {
@@ -54,7 +56,7 @@ func TestCodeSession(t *testing.T) {
 			Once()
 
 		sessionsService.
-			On("NewSession", mock.Anything, expectedUUID, DefaultCodeDuration).
+			On("NewSession", mock.Anything, expectedUUID, sessionTTL).
 			Return("session_id", nil).
 			Once()
 

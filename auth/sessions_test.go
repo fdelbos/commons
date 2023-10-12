@@ -45,7 +45,7 @@ func TestSessions(t *testing.T) {
 	// test get session
 	until := time.Now().Add(duration)
 	store.
-		On("Get", ctx, mock.Anything).
+		On("Get", ctx, mockDigest).
 		Return(func(ctx context.Context, digest []byte) (*Session, error) {
 			assert.Equal(t, mockDigest, digest)
 			return &Session{

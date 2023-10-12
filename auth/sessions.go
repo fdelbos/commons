@@ -54,7 +54,7 @@ func (s *Sessions) NewSession(ctx context.Context, userID uuid.UUID, duration ti
 		UserID: userID,
 	}
 	if duration != Forever {
-		until := time.Now().Add(duration)
+		until := time.Now().Add(duration).UTC()
 		session.Until = &until
 	}
 

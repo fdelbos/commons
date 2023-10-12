@@ -94,6 +94,12 @@ func ErrNotFound(c *fiber.Ctx) error {
 		utils.StatusMessage(fiber.StatusNotFound))
 }
 
+func ErrGone(c *fiber.Ctx) error {
+	return respondError(c,
+		fiber.StatusGone,
+		utils.StatusMessage(fiber.StatusGone))
+}
+
 func ErrInternal(c *fiber.Ctx, err error) error {
 	log.Printf("internal error: %v", err)
 	return respondError(c,
