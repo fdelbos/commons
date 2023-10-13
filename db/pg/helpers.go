@@ -3,12 +3,12 @@ package pg
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/dchest/uniuri"
 	"github.com/fdelbos/commons/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rs/zerolog/log"
 )
 
 type (
@@ -37,7 +37,7 @@ func queryFromCtx(ctx context.Context, defaultConn pgxInterface) db.Query {
 		return &query{v, ctx}
 
 	default:
-		log.Fatal().Msg("database context is not a Query object")
+		log.Fatalf("db/pg unknown type %T from context when looking for a query", v)
 		return nil
 	}
 }
@@ -45,7 +45,7 @@ func queryFromCtx(ctx context.Context, defaultConn pgxInterface) db.Query {
 func CreateNewDB(ctx context.Context, posrgresURL, dbName string) error {
 	pgConn, err := pgx.Connect(context.Background(), posrgresURL)
 	if err != nil {
-		log.Err(err).Msg("Unable to connect to postgres database")
+		log.Print("db/pg Unable to connect to postgres database: ", err)
 		return err
 	}
 
@@ -53,7 +53,7 @@ func CreateNewDB(ctx context.Context, posrgresURL, dbName string) error {
 
 	// create the new database
 	if _, err := pgConn.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s ENCODING 'UTF8';", dbName)); err != nil {
-		log.Err(err).Msg("Unable to create new database")
+		log.Print("db/pg Unable to create new database: ", err)
 		return err
 	}
 
@@ -73,7 +73,7 @@ func DropDB(ctx context.Context, dbURL string) error {
 
 	pgConn, err := pgx.Connect(context.Background(), posrgresURL)
 	if err != nil {
-		log.Err(err).Msg("Unable to connect to postgres database")
+		log.Print("db/pg Unable to connect to postgres database: ", err)
 		return err
 	}
 
@@ -81,7 +81,7 @@ func DropDB(ctx context.Context, dbURL string) error {
 
 	// drop the database
 	if _, err := pgConn.Exec(ctx, fmt.Sprintf("drop database if exists %s;", dbName)); err != nil {
-		log.Err(err).Msg("Unable to drop the database")
+		log.Print("db/pg Unable to drop the database: ", err)
 		return err
 	}
 	return nil
@@ -113,27 +113,24 @@ func GenerateDB(ctx context.Context, dbURL, prefix string, migrate func(string) 
 func newPool(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	config, err := pgxpool.ParseConfig(url)
 	if err != nil {
-		log.Err(err).
-			Str("url", url).
-			Msg("Unable to parse DATABASE_URL")
+		log.Printf("db/pg Unable to parse DATABASE_URL: %s got error: %v", url, err)
 		return nil, err
 	}
 
 	pool, err := pgxpool.New(context.Background(), url)
 	if err != nil {
-		log.Err(err).Msg("Unable to create connection pool")
+		log.Printf("db/pg Unable to create connection pool: %v", err)
 		return nil, err
 	}
 
 	host := fmt.Sprintf("%s:%d", config.ConnConfig.Host, config.ConnConfig.Port)
-	log.Info().
-		Str("host", host).
-		Str("user", config.ConnConfig.User).
-		Str("db", config.ConnConfig.Database).
-		Msg("connected to the database")
+	log.Printf(`db/pg connected to host="%s" user="%s" db="%s"`,
+		host,
+		config.ConnConfig.User,
+		config.ConnConfig.Database)
 
 	if err := pool.Ping(context.Background()); err != nil {
-		log.Err(err).Msg("cant ping the database")
+		log.Printf("db/pg Unable to ping database: %v", err)
 		return nil, err
 	}
 
@@ -143,27 +140,24 @@ func newPool(ctx context.Context, url string) (*pgxpool.Pool, error) {
 func newConn(ctx context.Context, url string) (*pgx.Conn, error) {
 	config, err := pgx.ParseConfig(url)
 	if err != nil {
-		log.Err(err).
-			Str("url", url).
-			Msg("Unable to parse DATABASE_URL")
+		log.Printf("db/pg Unable to parse DATABASE_URL: %s got error: %v", url, err)
 		return nil, err
 	}
 
 	conn, err := pgx.ConnectConfig(context.Background(), config)
 	if err != nil {
-		log.Err(err).Msg("Unable to create connection")
+		log.Print("db/pg Unable to create connection")
 		return nil, err
 	}
 
 	host := fmt.Sprintf("%s:%d", config.Host, config.Port)
-	log.Info().
-		Str("host", host).
-		Str("user", config.User).
-		Str("db", config.Database).
-		Msg("connected to the database")
+	log.Printf(`db/pg connected to host="%s" user="%s" db="%s"`,
+		host,
+		config.User,
+		config.Database)
 
 	if err := conn.Ping(context.Background()); err != nil {
-		log.Err(err).Msg("cant ping the database")
+		log.Printf("db/pg Unable to ping database: %v", err)
 		return nil, err
 	}
 

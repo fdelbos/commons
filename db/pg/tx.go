@@ -3,10 +3,10 @@ package pg
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/fdelbos/commons/db"
 	"github.com/jackc/pgx/v5"
-	"github.com/rs/zerolog/log"
 )
 
 type (
@@ -19,22 +19,20 @@ func tx(ctx context.Context, conn txBeginner, fn func(ctx context.Context) error
 
 	if q := ctx.Value(pgCtx); q != nil {
 		if _, ok := q.(pgx.Tx); ok {
-			log.Fatal().Msg("database context is already in a transaction")
+			log.Fatal("db/pg database context is already in a transaction")
 		}
 	}
 
 	tx, err := conn.Begin(ctx)
 	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("cant obtain transaction on the database")
+		log.Printf("db/pg cant obtain transaction on the database: %v", err)
 		return err
 	}
 
 	defer func() {
 		if !tx.Conn().IsClosed() {
 			if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-				log.Error().Err(err).Msg("error while rolling back")
+				log.Printf("db/pg error while rolling back: %v", err)
 			}
 		}
 	}()

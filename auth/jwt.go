@@ -118,5 +118,6 @@ func (j *JWTAudience) Validate(token string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return res.Claims.GetSubject()
 }

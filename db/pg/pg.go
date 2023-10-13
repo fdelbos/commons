@@ -45,7 +45,12 @@ func NewConn(url string) (*PgConn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &PgConn{conn, url}, nil
+	res := &PgConn{
+		conn:        conn,
+		databaseURL: url,
+	}
+
+	return res, nil
 }
 
 func NewPool(url string) (*pgPool, error) {
@@ -53,7 +58,10 @@ func NewPool(url string) (*pgPool, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &pgPool{pool, url}, nil
+	return &pgPool{
+		pool:        pool,
+		databaseURL: url,
+	}, nil
 }
 
 func (pg *pgPool) Query(ctx context.Context) db.Query {
