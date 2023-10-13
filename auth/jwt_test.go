@@ -15,25 +15,23 @@ func TestJWT(t *testing.T) {
 	assert.NoError(t, err)
 
 	subject := uuid.New().String()
-	issuer := uuid.New().String()
-	audience := uuid.New().String()
 
 	// test everything is ok
 	{
-		issuerJWT, err := NewJWTIssuer(issuer, priv)
+		issuerJWT, err := NewJWTIssuer(priv)
 		assert.NoError(t, err)
-		token, err := issuerJWT.Issue(time.Hour, subject, audience)
+		token, err := issuerJWT.Issue(subject)
 		assert.NoError(t, err)
 		log.Print(token)
 
-		audienceJWT, err := NewJWTAudience(pub, audience)
+		validator, err := NewJWTValidator(pub)
 		assert.NoError(t, err)
 
 		sub, err := GetProvisionmalSubject(token)
 		assert.NoError(t, err)
 		assert.Equal(t, subject, sub)
 
-		res, err := audienceJWT.Validate(token)
+		res, err := validator.Validate(token, time.Minute)
 		assert.NoError(t, err)
 		assert.Equal(t, subject, res)
 	}

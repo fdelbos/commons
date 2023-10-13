@@ -8,7 +8,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/fdelbos/commons/utils"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -16,13 +15,11 @@ type (
 	JWTIssuer struct {
 		method  jwt.SigningMethod
 		privKey crypto.PrivateKey
-		issuer  string
 	}
 
-	JWTAudience struct {
-		method   jwt.SigningMethod
-		pubKey   crypto.PublicKey
-		audience string
+	JWTValidator struct {
+		method jwt.SigningMethod
+		pubKey crypto.PublicKey
 	}
 )
 
@@ -33,7 +30,7 @@ const (
 var (
 	defaultMethod = jwt.SigningMethodEdDSA
 
-	ErrInvalidSignature = errors.New("invalid signature")
+	ErrInvalid = errors.New("invalid or expired token")
 )
 
 func NewJWTKeyPair() ([]byte, []byte, error) {
@@ -69,42 +66,35 @@ func NewJWTKeyPair() ([]byte, []byte, error) {
 }
 
 // NewJWT returns a new JWT instance.
-func NewJWTIssuer(issuer string, privKey []byte) (*JWTIssuer, error) {
+func NewJWTIssuer(privKey []byte) (*JWTIssuer, error) {
 	key, err := jwt.ParseEdPrivateKeyFromPEM(privKey)
 	if err != nil {
 		return nil, err
 	}
 	return &JWTIssuer{
 		method:  jwt.SigningMethodEdDSA,
-		issuer:  issuer,
 		privKey: key,
 	}, nil
 }
 
-func (j *JWTIssuer) Issue(ttl time.Duration, subject string, audiences ...string) (string, error) {
+func (j *JWTIssuer) Issue(subject string) (string, error) {
 	now := time.Now()
 	claims := jwt.RegisteredClaims{
-		Issuer:    j.issuer,
-		Subject:   subject,
-		Audience:  audiences,
-		ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
-		NotBefore: jwt.NewNumericDate(now.Add(-MaxClockSkew)),
-		IssuedAt:  jwt.NewNumericDate(now),
-		ID:        utils.RandomBase64(16),
+		Subject:  subject,
+		IssuedAt: jwt.NewNumericDate(now),
 	}
 	token := jwt.NewWithClaims(j.method, claims)
 	return token.SignedString(j.privKey)
 }
 
-func NewJWTAudience(pubKey []byte, audience string) (*JWTAudience, error) {
+func NewJWTValidator(pubKey []byte) (*JWTValidator, error) {
 	key, err := jwt.ParseEdPublicKeyFromPEM(pubKey)
 	if err != nil {
 		return nil, err
 	}
-	return &JWTAudience{
-		method:   jwt.SigningMethodEdDSA,
-		pubKey:   key,
-		audience: audience,
+	return &JWTValidator{
+		method: jwt.SigningMethodEdDSA,
+		pubKey: key,
 	}, nil
 }
 
@@ -115,21 +105,43 @@ func GetProvisionmalSubject(token string) (string, error) {
 		return "", err
 	}
 	if len(parts) != 3 {
-		return "", ErrInvalidSignature
+		return "", ErrInvalid
 	}
-	return res.Claims.GetSubject()
+	sub, err := res.Claims.GetSubject()
+	if err != nil {
+		return "", ErrInvalid
+	}
+	return sub, nil
 }
 
-func (j *JWTAudience) Validate(token string) (string, error) {
+func (j *JWTValidator) Validate(token string, ttl time.Duration) (string, error) {
 	res, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if token.Method != j.method {
-			return nil, ErrInvalidSignature
+			return nil, ErrInvalid
 		}
 		return j.pubKey, nil
-	}, jwt.WithAudience(j.audience))
+	})
 	if err != nil {
-		return "", err
+		return "", ErrInvalid
+	}
+	subject, err := res.Claims.GetSubject()
+	if err != nil {
+		return "", ErrInvalid
+	}
+	issuedAt, err := res.Claims.GetIssuedAt()
+	if err != nil {
+		return "", ErrInvalid
+	}
+	if issuedAt == nil {
+		return "", ErrInvalid
 	}
 
-	return res.Claims.GetSubject()
+	if time.Now().After(issuedAt.Add(ttl + MaxClockSkew)) {
+		return "", ErrInvalid
+	}
+	if time.Now().Before(issuedAt.Add(-MaxClockSkew)) {
+		return "", ErrInvalid
+	}
+
+	return subject, nil
 }
