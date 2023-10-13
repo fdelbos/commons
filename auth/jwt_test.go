@@ -28,6 +28,11 @@ func TestJWT(t *testing.T) {
 
 		audienceJWT, err := NewJWTAudience(pub, audience)
 		assert.NoError(t, err)
+
+		sub, err := GetProvisionmalSubject(token)
+		assert.NoError(t, err)
+		assert.Equal(t, subject, sub)
+
 		res, err := audienceJWT.Validate(token)
 		assert.NoError(t, err)
 		assert.Equal(t, subject, res)

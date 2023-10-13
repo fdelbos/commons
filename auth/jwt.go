@@ -108,13 +108,25 @@ func NewJWTAudience(pubKey []byte, audience string) (*JWTAudience, error) {
 	}, nil
 }
 
+func GetProvisionmalSubject(token string) (string, error) {
+	dest := jwt.RegisteredClaims{}
+	res, parts, err := jwt.NewParser().ParseUnverified(token, &dest)
+	if err != nil {
+		return "", err
+	}
+	if len(parts) != 3 {
+		return "", ErrInvalidSignature
+	}
+	return res.Claims.GetSubject()
+}
+
 func (j *JWTAudience) Validate(token string) (string, error) {
 	res, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if token.Method != j.method {
 			return nil, ErrInvalidSignature
 		}
 		return j.pubKey, nil
-	})
+	}, jwt.WithAudience(j.audience))
 	if err != nil {
 		return "", err
 	}
