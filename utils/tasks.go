@@ -46,15 +46,16 @@ func Refresh[T any](ctx context.Context, interval time.Duration, fn func(ctx con
 
 // Cron runs fn every interval until ctx is canceled.
 func Cron(ctx context.Context, interval time.Duration, fn func()) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-timer.C:
 			fn()
+			timer.Reset(interval)
 		}
 	}
 }
