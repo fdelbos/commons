@@ -23,5 +23,5 @@ func queryFromCtx(ctx context.Context, defaultConn *sql.DB) db.Query {
 	if _, ok := q.(*sql.DB); ok {
 		return &query{q.(*sql.DB), ctx}
 	}
-	panic("database context is not a Query object")
+	panic("sqlite database context is not a Query object")
 }

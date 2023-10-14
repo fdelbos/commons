@@ -3,8 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
-
-	"github.com/rs/zerolog/log"
+	"log"
 )
 
 type (
@@ -17,15 +16,13 @@ func tx(ctx context.Context, conn txBeginner, fn func(ctx context.Context) error
 
 	if q := ctx.Value(sqlCtx); q != nil {
 		if _, ok := q.(*sql.Tx); ok {
-			log.Fatal().Msg("database context is already in a transaction")
+			log.Fatal("database context is already in a transaction")
 		}
 	}
 
 	tx, err := conn.Begin()
 	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("cant obtain transaction on the database")
+		log.Printf("cant obtain transaction on the database: %v", err)
 		return err
 	}
 
@@ -33,7 +30,7 @@ func tx(ctx context.Context, conn txBeginner, fn func(ctx context.Context) error
 	defer func() {
 		if !closed {
 			if err := tx.Rollback(); err != nil {
-				log.Error().Err(err).Msg("error while rolling back")
+				log.Printf("error while rolling back: %v", err)
 			}
 		}
 	}()
