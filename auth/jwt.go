@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -98,7 +99,28 @@ func NewJWTValidator(pubKey []byte) (*JWTValidator, error) {
 	}, nil
 }
 
+func NewJWTValidatorWithMethod(pubKey []byte, method jwt.SigningMethod) (*JWTValidator, error) {
+	key, err := jwt.ParseEdPublicKeyFromPEM(pubKey)
+	if err != nil {
+		return nil, err
+	}
+	return &JWTValidator{
+		method: method,
+		pubKey: key,
+	}, nil
+}
+
+func cleanToken(token string) string {
+	token = strings.TrimPrefix(token, "Bearer ")
+	return strings.TrimSpace(token)
+}
+
 func GetProvisionmalSubject(token string) (string, error) {
+	token = cleanToken(token)
+	if token == "" {
+		return "", ErrInvalid
+	}
+
 	dest := jwt.RegisteredClaims{}
 	res, parts, err := jwt.NewParser().ParseUnverified(token, &dest)
 	if err != nil {
@@ -115,6 +137,8 @@ func GetProvisionmalSubject(token string) (string, error) {
 }
 
 func (j *JWTValidator) Validate(token string, ttl time.Duration) (string, error) {
+	token = cleanToken(token)
+
 	res, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if token.Method != j.method {
 			return nil, ErrInvalid
