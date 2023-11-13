@@ -3,6 +3,8 @@ package auth
 import (
 	"crypto"
 	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -25,12 +27,11 @@ type (
 )
 
 const (
-	MaxClockSkew = time.Minute
+	MaxClockSkew  = time.Minute
+	RSA256KeySize = 2048
 )
 
 var (
-	defaultMethod = jwt.SigningMethodEdDSA
-
 	ErrInvalid = errors.New("invalid or expired token")
 )
 
@@ -64,6 +65,29 @@ func NewJWTKeyPair() ([]byte, []byte, error) {
 	pubKey := pem.EncodeToMemory(block)
 
 	return pubKey, privKey, nil
+}
+
+func NewRSAJWTKeyPair() ([]byte, []byte, error) {
+	privKey, err := rsa.GenerateKey(rand.Reader, RSA256KeySize)
+	if err != nil {
+		return nil, nil, err
+	}
+	privKeyPEM := pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(privKey),
+		},
+	)
+
+	pubKey := privKey.PublicKey
+	pubKeyPEM := pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "PUBLIC KEY",
+			Bytes: x509.MarshalPKCS1PublicKey(&pubKey),
+		},
+	)
+
+	return privKeyPEM, pubKeyPEM, nil
 }
 
 // NewJWT returns a new JWT instance.
@@ -115,7 +139,7 @@ func cleanToken(token string) string {
 	return strings.TrimSpace(token)
 }
 
-func GetProvisionmalSubject(token string) (string, error) {
+func GetProvisionalSubject(token string) (string, error) {
 	token = cleanToken(token)
 	if token == "" {
 		return "", ErrInvalid
