@@ -100,6 +100,12 @@ func ErrGone(c *fiber.Ctx) error {
 		utils.StatusMessage(fiber.StatusGone))
 }
 
+func ErrForbidden(c *fiber.Ctx) error {
+	return respondError(c,
+		fiber.StatusForbidden,
+		utils.StatusMessage(fiber.StatusForbidden))
+}
+
 func ErrInternal(c *fiber.Ctx, err error) error {
 	log.Printf("internal error: %v", err)
 	return respondError(c,

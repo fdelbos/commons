@@ -1,6 +1,9 @@
 package www
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/fdelbos/commons/validation"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -42,4 +45,23 @@ func Parser[T any](next func(*fiber.Ctx, *T) error) fiber.Handler {
 
 		return next(c, body)
 	}
+}
+
+func ParseInt(c *fiber.Ctx, key string, min, max, defaultValue int) (int, error) {
+	value := c.Params(key)
+	if value == "" {
+		return defaultValue, nil
+	}
+	nb, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, respondError(c,
+			fiber.StatusBadRequest,
+			fmt.Sprintf("invalid parameter %s", key))
+	}
+	if nb < min || nb > max {
+		return 0, respondError(c,
+			fiber.StatusBadRequest,
+			fmt.Sprintf("invalid parameter %s, must be between %d and %d", key, min, max))
+	}
+	return nb, nil
 }
