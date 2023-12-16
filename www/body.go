@@ -2,12 +2,23 @@ package www
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/fdelbos/commons/validation"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
+
+type (
+	Pagination struct {
+		Limit  int32 `json:"limit"`
+		Offset int32 `json:"offset"`
+	}
+)
+
+const DefaultMaxOffset = int32(math.MaxInt16)
+const DefaultMaxSize = int32(100)
 
 func validationErrors(c *fiber.Ctx, err error) error {
 	if _, ok := err.(*validator.InvalidValidationError); ok {
@@ -47,21 +58,59 @@ func Parser[T any](next func(*fiber.Ctx, *T) error) fiber.Handler {
 	}
 }
 
-func ParseInt(c *fiber.Ctx, key string, min, max, defaultValue int) (int, error) {
-	value := c.Params(key)
+func parseInt32QueryParam(c *fiber.Ctx, key string, min, max, defaultValue int32) (int32, error) {
+	value := c.Query(key)
+
+	// If the parameter is not found, the default value is returned.
 	if value == "" {
 		return defaultValue, nil
 	}
-	nb, err := strconv.Atoi(value)
+
+	// If the parameter is found but is not an integer, a 400 Bad Request is returned.
+	nb, err := strconv.ParseInt(value, 10, 32)
 	if err != nil {
-		return 0, respondError(c,
-			fiber.StatusBadRequest,
-			fmt.Sprintf("invalid parameter %s", key))
+		return 0,
+			BadRequest(c, fmt.Sprintf("invalid query parameter '%s', must be an integer between %d and %d", key, min, max))
 	}
-	if nb < min || nb > max {
-		return 0, respondError(c,
-			fiber.StatusBadRequest,
-			fmt.Sprintf("invalid parameter %s, must be between %d and %d", key, min, max))
+	res := int32(nb)
+	if res < min || res > max {
+		return 0,
+			BadRequest(c, fmt.Sprintf("invalid query parameter '%s', must be an integer between %d and %d", key, min, max))
 	}
-	return nb, nil
+	return res, nil
+}
+
+// Paginated is a middleware that parses the limit and offset parameters from the query string.
+// takes two optional parameters: the maximum limit and the maximum offset.
+//
+// Only GET requests are allowed to use this middleware
+func Paginated(next func(*fiber.Ctx, Pagination) error, params ...int32) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+
+		if c.Method() != fiber.MethodGet {
+			return BadRequest(c, "invalid method")
+		}
+
+		pagination := Pagination{}
+		var err error
+
+		maxSize := DefaultMaxSize
+		if len(params) > 0 {
+			maxSize = params[0]
+		}
+		pagination.Limit, err = parseInt32QueryParam(c, "limit", 1, maxSize, 10)
+		if err != nil {
+			return err
+		}
+
+		maxOffset := DefaultMaxOffset
+		if len(params) > 1 {
+			maxOffset = params[1]
+		}
+		pagination.Offset, err = parseInt32QueryParam(c, "offset", 0, maxOffset, 0)
+		if err != nil {
+			return err
+		}
+		return next(c, pagination)
+	}
 }
