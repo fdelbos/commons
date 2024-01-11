@@ -55,11 +55,11 @@ func (e *SMTPEmail) Send(ctx context.Context, to, subject string, textReader, ht
 	msg.To(to)
 	msg.Subject(subject)
 
-	if raw, err := io.ReadAll(textReader); err == nil {
+	if raw, err := io.ReadAll(textReader); err == nil && len(raw) > 0 {
 		msg.SetBodyString(mail.TypeTextPlain, string(raw))
 	}
 
-	if raw, err := io.ReadAll(htmlReader); err == nil {
+	if raw, err := io.ReadAll(htmlReader); err == nil && len(raw) > 0 {
 		msg.SetBodyString(mail.TypeTextHTML, string(raw))
 	}
 

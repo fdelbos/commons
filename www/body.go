@@ -114,3 +114,15 @@ func Paginated(next func(*fiber.Ctx, Pagination) error, params ...int32) fiber.H
 		return next(c, pagination)
 	}
 }
+
+func Int64(c *fiber.Ctx, key string) (int64, error) {
+	value := c.Params(key)
+	if value == "" {
+		return 0, BadRequest(c, fmt.Sprintf("invalid parameter '%s'", key))
+	}
+	nb, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return 0, BadRequest(c, fmt.Sprintf("invalid parameter '%s'", key))
+	}
+	return nb, nil
+}
