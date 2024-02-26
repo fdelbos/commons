@@ -27,7 +27,7 @@ func TestJWT(t *testing.T) {
 		validator, err := NewJWTValidator(pub)
 		assert.NoError(t, err)
 
-		sub, err := GetProvisionmalSubject(token)
+		sub, err := GetProvisionalSubject(token)
 		assert.NoError(t, err)
 		assert.Equal(t, subject, sub)
 
